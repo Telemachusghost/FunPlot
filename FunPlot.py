@@ -22,91 +22,93 @@ and plots them using tkinter. Can understand standard python expressions.
 
 ************************
 
-authors Derick Falk, Thomas Bowers, Daniel Denniston
+author Derick Falk
 """
-try:
-	DEFAULT_HEIGHT = 500
-	DEFAULT_WIDTH = 500
+
+DEFAULT_HEIGHT = 500
+DEFAULT_WIDTH = 500
 	
 
-		# The graph frame
-	class graph(tk.Tk):
+# The
+class graph(tk.Tk):
 
-		def __init__(self, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
-			
-			tk.Tk.__init__(self)
-			self.width = width
-			self.height = height
-			
-
-			self.can = Canvas(self, width = width, height = height, bg = 'white')
-			self.can.pack()
+	def __init__(self, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 		
-		# Method to draw the marks for the interval
-		def drawmarks(self, interval):
+		tk.Tk.__init__(self)
+		self.width = width
+		self.height = height
+		
 
-			s = interval[1] - interval[0]
-			mark = self.width//s
-			for i in range(0, self.width, mark):
-				self.can.create_line(i, self.height/2+10, i, self.height/2-10)
+		self.can = Canvas(self, width = width, height = height, bg = 'white')
+		self.can.pack()
+		
+	# Method to draw the marks for the interval
+	def drawmarks(self, interval):
 
-			for i in range(0,self.height, mark):
-				self.can.create_line(self.width/2+10, i, self.width/2-10, i)
+		s = interval[1] - interval[0]
+		mark = self.width//s
+		for i in range(0, self.width, mark):
+			self.can.create_line(i, self.height/2+10, i, self.height/2-10)
 
-		# Method to draw the graph implement an arg parser at a later time *work
-		def drawgraph(self, expression=1, interval=(-10,10)):
-			self.can.delete('all')
-			self.can.create_line(0, self.height/2, self.width, self.height/2)
-			self.can.create_line(self.width/2, 0, self.width/2, self.height)
-			s = interval[1] - interval[0]
-			mark = self.width//s
-			y = 0
-			self.drawmarks(interval)
-			ypoints = self.argparse(expression, interval)
+		for i in range(0,self.height, mark):
+			self.can.create_line(self.width/2+10, i, self.width/2-10, i)
+
+	# Method to draw the graph implement an arg parser at a later time *work
+	def drawgraph(self, expression=1, interval=(-10,10)):
+		self.can.delete('all')
+		self.can.create_line(0, self.height/2, self.width, self.height/2)
+		self.can.create_line(self.width/2, 0, self.width/2, self.height)
+		s = interval[1] - interval[0]
+		mark = self.width//s
+		y = 0
+		self.drawmarks(interval)
+		ypoints = self.argparse(expression, interval)
 			
+		for x in np.arange(interval[0], interval[1], 0.001):
+			self.can.create_oval((self.width/2)+x*mark-1, (self.height/2)+-ypoints[y]*mark-1, (self.width/2)+x*mark+1, (self.height/2)+-ypoints[y]*mark+1 )
+			y += 1
+
+	# The arg parser for the string expression *work
+	def argparse(self, expression, interval):
+		ypts = [] 
+		try:
 			for x in np.arange(interval[0], interval[1], 0.001):
-				self.can.create_oval((self.width/2)+x*mark-1, (self.height/2)+-ypoints[y]*mark-1, (self.width/2)+x*mark+1, (self.height/2)+-ypoints[y]*mark+1 )
-				y += 1
-
-		# The arg parser for the string expression *work
-		def argparse(self, expression, interval):
-			ypts = [] 
-			try:
-				for x in np.arange(interval[0], interval[1], 0.001):
-					ypts.append(eval(expression))
-				return ypts 
-			except:
-				pass # Put some error code in here incase of bad expression that python does not understand
+				ypts.append(eval(expression))
+			return ypts 
+		except:
+			pass # Put some error code in here incase of bad expression that python does not understand
 	
 		
 
 
 
-	# Root window for graphing program
-	app = graph()
-	app.title("Fun Plot")
+# Root window for graphing program
+app = graph()
+app.title("Fun Plot")
 
-	# Input window for expression
+# Input window for expression
 
-	input_expression = Toplevel(bg = 'white', width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT/2)
-	input_expression.wm_title('f(x)')
-	expression = StringVar()
+input_expression = Toplevel(bg = 'white', width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT/2)
+input_expression.wm_title('f(x)')
+expression = StringVar()
 	
-
-	w = Label(input_expression, text="f(x) =" ,bg='white')
-	w.pack(side=LEFT)
+expressionin = Frame(master=input_expression, bg = 'white')
+expressionin.pack()
+w = Label(expressionin, text="f(x) =" ,bg='white')
+w.pack(side=LEFT)
 	
-	e = Entry(input_expression, textvariable=expression)
-	e.pack(side=LEFT)
+e = Entry(expressionin, textvariable=expression)
+e.pack(side=LEFT)
 	
 	
-	b = Button(input_expression, text="Plot", command = lambda: app.drawgraph(expression=e.get()))
-	b.pack(side = RIGHT)
+b = Button(expressionin, text="Plot", command = lambda: app.drawgraph(expression=e.get()))
+b.pack(side = RIGHT)
 		
+# key bindings	
+app.bind('<Return>',lambda event: app.drawgraph(expression=e.get()))
+input_expression.bind('<Return>',lambda event: app.drawgraph(expression=e.get()))
 
+# Main loop of program
+app.mainloop()
 
-
-	app.mainloop()
-except Exception as e:
-	traceback.print_exc(e)
 

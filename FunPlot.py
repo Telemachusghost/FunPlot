@@ -22,7 +22,7 @@ and plots them using tkinter. Can understand standard python expressions.
 
 ************************
 
-author Derick Falk
+author Derick Falk, Daniel Bowers, Daniel Denniston
 """
 
 DEFAULT_HEIGHT = 500

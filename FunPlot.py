@@ -29,7 +29,7 @@ DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
 	
 
-# The
+# The root plotting window
 class graph(tk.Tk):
 
 	def __init__(self, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):

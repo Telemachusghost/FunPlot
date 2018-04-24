@@ -4,7 +4,7 @@ from tkinter import *
 import numpy as np
 from math import *
 
-# Test
+
 """
 
 A simple plotting program that parses expressions

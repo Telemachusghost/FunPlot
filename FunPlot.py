@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import *
 import numpy as np
 from math import *
+import re
 
 
 """
@@ -98,10 +99,13 @@ class graph(tk.Tk):
 		if s < 10:
 			self.adjustcanvas(s)
 
-	# The arg parser for the string expression *work
+	# The arg parser for the string expression 
+	# Need to work on it so that x**(linexp) works
+	# Modify regex
+	#
 	def argparse(self, expression, interval):
 		ypts = [] 
-		if 'x**x' or 'x**0.5' in expression:
+		if re.search(r'\bx\*\*[a-z]*[\d\(\)\+\-\*\/\.]*[0-9]*x[\d\(\)\+\-\*\/\.]*[0-9]*',expression) or re.search(r'\(*x[\*\-\+0-9]*\)*\*\*[0-9]+.5',expression):
 			interval[0]=0
 		try:
 			for x in np.arange(interval[0], interval[1], 0.01):
@@ -111,7 +115,7 @@ class graph(tk.Tk):
 			pass # Put some error code in here incase of bad expression that python does not understand
 	
 		
-
+# Gets interval from interval
 def intervalget():
 	interval = []
 	interval.append(int(intervalleft.get()))
@@ -153,6 +157,7 @@ b = Button(expressionin, text="Plot", command = lambda: app.drawgraph(expression
 b.pack(side = RIGHT)
 
 
+# Interval widgets
 intervalleft = Entry(intervalin, textvariable = intervalexpleft, width=25)
 intervalleft.pack(side=LEFT)
 

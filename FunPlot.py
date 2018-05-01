@@ -156,6 +156,32 @@ def intervalget():
 app = graph()
 app.title("Fun Plot")
 
+# Mouse click event
+xPos = 0
+yPos = 0
+def showPosEvent(event):
+    xPos = event.x / 25
+    if xPos < 10:
+                xPos = xPos - 10
+    elif xPos > 10:
+            xPos = xPos - 10
+    elif xPos == 10:
+            xPos = 0
+    yPos = event.y / 25
+    if yPos < 10:
+            yPos = 10 - yPos
+    elif yPos > 10:
+            yPos = 10 - yPos
+    elif yPos == 10:
+            yPos = 0
+    xPos = '%.2f'%(xPos)
+    yPos = '%.2f'%(yPos)
+    print('X=%s Y=%s' % (xPos, yPos))
+    app.can.create_text(event.x, event.y - 10, fill='black', font='Times', text=f'({xPos}, {yPos})')
+
+def onLeftClick(event):
+    print(showPosEvent(event))
+
 # Input window for expression
 
 input_expression = Toplevel(bg = 'white', width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT/2)
@@ -196,6 +222,7 @@ intervalright.pack(side = RIGHT)
 
 # key bindings	
 app.bind('<Return>',lambda event: app.drawgraph(expression=e.get()))
+app.bind('<Button-1>', onLeftClick)
 input_expression.bind('<Return>',lambda event: app.drawgraph(expression=e.get(), interval = intervalget()))
 
 # Main loop of program

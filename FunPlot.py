@@ -30,6 +30,15 @@ author Derick Falk, Daniel Denniston, Thomas Bowers
 DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
 
+#make a list of safe functions
+safe_list = ['math','acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'de\
+grees', 'e', 'exp', 'fabs', 'floor', 'fmod', 'frexp', 'hypot', 'ldexp', 'log', 
+'log10', 'modf', 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh']
+#use the list to filter the local namespace
+safe_dict = dict([ (k, locals().get(k, None)) for k in safe_list ])
+#add any needed builtins back in.
+safe_dict['abs'] = abs
+
 
 	
 
@@ -106,10 +115,15 @@ class graph(tk.Tk):
 	def argparse(self, expression, interval):
 		ypts = [] 
 		if re.search(r'\bx\*\*[a-z]*[\d\(\)\+\-\*\/\.]*[0-9]*x[\d\(\)\+\-\*\/\.]*[0-9]*',expression) or re.search(r'\(*x[\*\-\+0-9]*\)*\*\*[0-9]+.5',expression):
-			interval[0]=0
+			if interval[0]<0:
+				interval[0]=0
 		try:
 			for x in np.arange(interval[0], interval[1], 0.01):
-				ypts.append(eval(expression))
+				try:
+					safe_dict['x'] = x
+					ypts.append(eval(expression,{"__builtins__":None},safe_dict))
+				except TypeError:
+					continue
 			return ypts 
 		except:
 			pass # Put some error code in here incase of bad expression that python does not understand

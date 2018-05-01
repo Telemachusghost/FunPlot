@@ -73,22 +73,23 @@ class graph(tk.Tk):
 		for i in np.arange(0, self.width, mark):
 			self.can.create_line(i, self.height//2+10, i, self.height//2-10)
 			if r != interval[0]:
-				self.can.create_text(i+5,self.height//2+15,fill="darkblue",font="Times 8 italic bold",text=r, width=10)
+				self.can.create_text(i+5,self.height//2+15,fill="darkblue",font="Times 8 italic bold",text=r, width=0)
 			r += 1
 		
 		r = interval[0]
 		for i in np.arange(0, self.height, mark):
 			self.can.create_line(self.width//2+10, i, self.width//2-10, i)
 			if r != interval[0] and r != 0:
-				self.can.create_text(self.width//2+15,i+5,fill="darkblue",font="Times 8 italic bold",text=-r, width=10)
+				self.can.create_text(self.width//2+15,i+5,fill="darkblue",font="Times 8 italic bold",text=-r, width=0)
 			r += 1
 
 	# Method to draw the graph implement an arg parser at a later time *work
-	def drawgraph(self, expression=1, interval=[-10,10]):
-		
+	def drawgraph(self, expression, interval):
+		freq = 0.01
 		s = interval[1] - interval[0]
+		if s <= 2: freq = 0.0001
 		mark = self.width//s
-		if mark < 10:
+		if mark < 20:
 			self.adjustcanvas(s)
 
 		mark = self.width/s
@@ -98,35 +99,42 @@ class graph(tk.Tk):
 		
 		y = 0
 		self.drawmarks(interval)
-		ypoints = self.argparse(expression, interval)
+		ypoints = self.argparse(expression, interval, freq)
 			
-		for x in np.arange(interval[0], interval[1], 0.01):
-			self.can.create_oval((self.width/2)+x*mark-2, (self.height/2)+-ypoints[y]*mark-2, (self.width/2)+x*mark+2, (self.height/2)+-ypoints[y]*mark+2, fill='black' )
+		for x in np.arange(interval[0], interval[1], freq):
+			if self.width < (self.height/2)+-ypoints[y]*mark-2 > self.height: 
+				y += 1
+				continue
+			self.can.create_oval((self.width/2)+x*mark-2, (self.height/2)+-ypoints[y]*mark-2, (self.width/2)+x*mark+2, (self.height/2)+-ypoints[y]*mark+2, fill='black')
 			y += 1
 
 	# Adjusts canvas size
 	def adjustcanvas(self,interval):
+		
+		self.can.config(scrollregion=self.can.bbox('all'), height=self.height*1.5, width=self.width*1.5)
 		self.width *= 1.5
 		self.height *= 1.5
-		self.can.config(scrollregion=self.can.bbox('all'))
 		s = self.width//interval
-		if s < 10:
+		if s < 20:
 			self.adjustcanvas(s)
 
 	# The arg parser for the string expression 
 	# Need to work on it so that x**(linexp) works
 	# Modify regex
 	#
-	def argparse(self, expression, interval):
+	def argparse(self, expression, interval, freq):
 		ypts = [] 
 		if re.search(r'\bx\*\*[a-z]*[\d\(\)\+\-\*\/\.]*[0-9]*x[\d\(\)\+\-\*\/\.]*[0-9]*',expression) or re.search(r'\(*x[\*\-\+0-9]*\)*\*\*[0-9]+.5',expression):
 			if interval[0]<0:
 				interval[0]=0
 		try:
-			for x in np.arange(interval[0], interval[1], 0.01):
+			for x in np.arange(interval[0], interval[1], freq):
 				try:
 					safe_dict['x'] = x
-					ypts.append(eval(expression,{"__builtins__":None},safe_dict))
+					
+					y = eval(expression,{"__builtins__":None},safe_dict)
+					
+					ypts.append(y)
 				except TypeError:
 					continue
 				except ValueError:

@@ -35,7 +35,7 @@ safe_list = ['math','acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'de\
 grees', 'e', 'exp', 'fabs', 'floor', 'fmod', 'frexp', 'hypot', 'ldexp', 'log', 
 'log10', 'modf', 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh']
 #use the list to filter the local namespace
-safe_dict = dict([ (k, locals().get(k, None)) for k in safe_list ])
+safe_dict = dict([ (k, globals().get(k, None)) for k in safe_list ])
 #add any needed builtins back in.
 safe_dict['abs'] = abs
 
@@ -67,16 +67,21 @@ class graph(tk.Tk):
 		
 	# Method to draw the marks for the interval
 	def drawmarks(self, interval):
-
+		r = interval[0]
 		s = interval[1] - interval[0]
 		mark = self.width/s
 		for i in np.arange(0, self.width, mark):
 			self.can.create_line(i, self.height//2+10, i, self.height//2-10)
+			if r != interval[0]:
+				self.can.create_text(i+5,self.height//2+15,fill="darkblue",font="Times 8 italic bold",text=r, width=10)
+			r += 1
 		
-
+		r = interval[0]
 		for i in np.arange(0, self.height, mark):
 			self.can.create_line(self.width//2+10, i, self.width//2-10, i)
-
+			if r != interval[0] and r != 0:
+				self.can.create_text(self.width//2+15,i+5,fill="darkblue",font="Times 8 italic bold",text=-r, width=10)
+			r += 1
 
 	# Method to draw the graph implement an arg parser at a later time *work
 	def drawgraph(self, expression=1, interval=[-10,10]):
@@ -96,7 +101,7 @@ class graph(tk.Tk):
 		ypoints = self.argparse(expression, interval)
 			
 		for x in np.arange(interval[0], interval[1], 0.01):
-			self.can.create_oval((self.width/2)+x*mark-2, (self.height/2)+-ypoints[y]*mark-2, (self.width/2)+x*mark+2, (self.height/2)+-ypoints[y]*mark+2 )
+			self.can.create_oval((self.width/2)+x*mark-2, (self.height/2)+-ypoints[y]*mark-2, (self.width/2)+x*mark+2, (self.height/2)+-ypoints[y]*mark+2, fill='black' )
 			y += 1
 
 	# Adjusts canvas size
@@ -124,6 +129,9 @@ class graph(tk.Tk):
 					ypts.append(eval(expression,{"__builtins__":None},safe_dict))
 				except TypeError:
 					continue
+				except ValueError:
+					interval[0] = 0
+					interval[1] = 1
 			return ypts 
 		except:
 			pass # Put some error code in here incase of bad expression that python does not understand

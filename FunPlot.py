@@ -4,6 +4,8 @@ from tkinter import *
 import numpy as np
 from math import *
 import re
+from MySQLdb import *
+import socket
 
 
 """
@@ -30,6 +32,7 @@ author Derick Falk, Daniel Denniston, Thomas Bowers
 DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
 
+# Protects from eval being used incorrectly
 #make a list of safe functions
 safe_list = ['math','acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'de\
 grees', 'e', 'exp', 'fabs', 'floor', 'fmod', 'frexp', 'hypot', 'ldexp', 'log', 
@@ -39,8 +42,9 @@ safe_dict = dict([ (k, globals().get(k, None)) for k in safe_list ])
 #add any needed builtins back in.
 safe_dict['abs'] = abs
 
-
-	
+# Connect to database
+cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
+cursor = cnx.cursor()
 
 # The root plotting window
 class graph(tk.Tk):
@@ -144,6 +148,43 @@ class graph(tk.Tk):
 		except:
 			pass # Put some error code in here incase of bad expression that python does not understand
 	
+	# Allows user to upload an ORGINAL plot to the database
+	def upload(self, expression):
+		hostname = str(socket.gethostname())
+		try:
+			add_plot = f'INSERT INTO users_plots (hostname, plot) VALUES ("{hostname}", "{expression}");'
+			cursor.execute(add_plot)
+			cnx.commit()
+		except:
+			pass
+
+	# Allows user to see plots other users have thought up
+	def download(self, cursor):
+		
+		hosts = []
+		plots = []
+		
+		get_users = 'SELECT hostname FROM users_plots'
+		cursor.execute(get_users)
+		for i in cursor:
+			hosts.append(str(i)[2:-3])
+
+		get_plots = 'SELECT plot FROM users_plots'
+		cursor.execute(get_plots)
+		for i in cursor:
+			plots.append(str(i)[2:-3])
+
+		plotwindow = tk.Tk()
+		plotwindow.wm_title('Users Plots')
+		t = Text(plotwindow, height=20, width=30)
+		t.pack()
+		t.insert(END,'<Hostname>: <plot>\n')
+
+		for i in range(len(hosts)):
+			t.insert(END, f"{hosts[i]}: ")
+			t.insert(END, f"{plots[i]}\n")
+
+		plotwindow.mainloop()
 		
 # Gets interval from interval
 def intervalget():
@@ -201,13 +242,19 @@ intervalin = Frame(master=input_expression, bg='white', width=25)
 intervalin.pack()
 
 
-# The expressions widgets
+
+# The expressions widgets, includes an upload to database button
 w = Label(expressionin, text="f(x) =" ,bg='white')
 w.pack(side=LEFT)
 	
 e = Entry(expressionin, textvariable=expression)
 e.pack(side=LEFT)
+
+db = Button(expressionin, text='Download', command= lambda: app.download(cursor))
+db.pack(side = RIGHT)
 	
+pb = Button(expressionin, text='Upload', command= lambda: app.upload(e.get()))
+pb.pack(side = RIGHT)
 	
 b = Button(expressionin, text="Plot", command = lambda: app.drawgraph(expression=e.get(), interval=intervalget()))
 b.pack(side = RIGHT)
@@ -219,6 +266,7 @@ intervalleft.pack(side=LEFT)
 
 intervalright = Entry(intervalin, textvariable = intervalexpright, width=25)
 intervalright.pack(side = RIGHT)
+
 
 # key bindings	
 app.bind('<Return>',lambda event: app.drawgraph(expression=e.get()))

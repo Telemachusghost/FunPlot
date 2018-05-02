@@ -32,6 +32,7 @@ author Derick Falk, Daniel Denniston, Thomas Bowers
 DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
 
+
 # Protects from eval being used incorrectly
 #make a list of safe functions
 safe_list = ['math','acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'de\
@@ -45,6 +46,7 @@ safe_dict['abs'] = abs
 # Connect to database
 cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
 cursor = cnx.cursor()
+
 
 # The root plotting window
 class graph(tk.Tk):

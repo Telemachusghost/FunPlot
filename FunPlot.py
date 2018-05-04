@@ -32,7 +32,6 @@ author Derick Falk, Daniel Denniston, Thomas Bowers
 DEFAULT_HEIGHT = 500
 DEFAULT_WIDTH = 500
 
-
 # Protects from eval being used incorrectly
 #make a list of safe functions
 safe_list = ['math','acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'de\
@@ -46,7 +45,6 @@ safe_dict['abs'] = abs
 # Connect to database
 cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
 cursor = cnx.cursor()
-
 
 # The root plotting window
 class graph(tk.Tk):
@@ -68,7 +66,7 @@ class graph(tk.Tk):
 		vbar.config(command=self.can.yview)
 
 		
-		self.can.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set, scrollregion=(0,0,2000,2000))
+		self.can.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set, scrollregion=(0,0,5000,5000))
 		self.can.pack(side=LEFT,expand=True,fill=BOTH)
 		
 	# Method to draw the marks for the interval
@@ -93,9 +91,10 @@ class graph(tk.Tk):
 	def drawgraph(self, expression, interval):
 		freq = 0.01
 		s = interval[1] - interval[0]
-		if s <= 2: freq = 0.0001
+		if s <= 20: freq = 0.0001
+		if s <= 2: freq = 0.00001
 		mark = self.width//s
-		if mark < 20:
+		if mark < 15:
 			self.adjustcanvas(s)
 
 		mark = self.width/s
@@ -117,11 +116,12 @@ class graph(tk.Tk):
 	# Adjusts canvas size
 	def adjustcanvas(self,interval):
 		
-		self.can.config(scrollregion=self.can.bbox('all'), height=self.height*1.5, width=self.width*1.5)
+		
 		self.width *= 1.5
 		self.height *= 1.5
+		self.config(width=self.width,height=self.height)
 		s = self.width//interval
-		if s < 20:
+		if s < 15:
 			self.adjustcanvas(s)
 
 	# The arg parser for the string expression 
@@ -177,15 +177,20 @@ class graph(tk.Tk):
 			plots.append(str(i)[2:-3])
 
 		plotwindow = tk.Tk()
+		plotwindow.maxsize(width=400,height=250)
 		plotwindow.wm_title('Users Plots')
-		t = Text(plotwindow, height=20, width=30)
-		t.pack()
-		t.insert(END,'<Hostname>: <plot>\n')
+		scrolld = Scrollbar(plotwindow)
+		scrolld.pack(side=RIGHT,fill=Y)
 
+		t = Text(plotwindow, height=20, width=50)
+		t.pack()
+		scrolld.config(command=t.yview)
+		t.insert(END,'<Hostname>: <plot>\n')
+		
 		for i in range(len(hosts)):
 			t.insert(END, f"{hosts[i]}: ")
 			t.insert(END, f"{plots[i]}\n")
-
+		t.config(state=DISABLED)
 		plotwindow.mainloop()
 		
 # Gets interval from interval

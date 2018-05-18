@@ -1,0 +1,2 @@
+numpy==1.14.1
+MySqlClient==1.3.12

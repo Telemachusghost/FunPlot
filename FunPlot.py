@@ -13,18 +13,6 @@ import socket
 A simple plotting program that parses expressions
 and plots them using tkinter. Can understand standard python expressions.
 
-***Possible additions***
-
-1. Some more error code in order to handle expressions python does not understand
-2. Some general clean up
-3. Have the canvas be cleaned when every new graph is drawn *Done*
-4. Better drawing representation *Possibly done I made it draw more dots to get a better plot of the function which impacted performance*
-5. Ability to change interval and screen size possibly through command line arguments
-6. Be able to use it through the command line
-7. x**x seems off and may be an issue with how I i transform the equation to be drawn to screen
-
-************************
-
 author Derick Falk, Daniel Denniston, Thomas Bowers
 """
 
@@ -36,15 +24,16 @@ DEFAULT_WIDTH = 500
 #make a list of safe functions
 safe_list = ['math','acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'de\
 grees', 'e', 'exp', 'fabs', 'floor', 'fmod', 'frexp', 'hypot', 'ldexp', 'log', 
-'log10', 'modf', 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh']
+'log10', 'modf', 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh', 'max']
 #use the list to filter the local namespace
 safe_dict = dict([ (k, globals().get(k, None)) for k in safe_list ])
 #add any needed builtins back in.
 safe_dict['abs'] = abs
+safe_dict['max'] = max
+safe_dict['min'] = min
+
 
 # Connect to database
-cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
-cursor = cnx.cursor()
 
 # The root plotting window
 class graph(tk.Tk):
@@ -65,15 +54,25 @@ class graph(tk.Tk):
 		vbar.pack(side=RIGHT,fill=Y)
 		vbar.config(command=self.can.yview)
 
+		# Bindings for the canvas
+		self.can.bind("<MouseWheel>",self.zoomer)
+		self.can.bind("<ButtonPress-1>", self.move_start)
+		self.can.bind("<B1-Motion>", self.move_move)
 		
 		self.can.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set, scrollregion=(0,0,5000,5000))
 		self.can.pack(side=LEFT,expand=True,fill=BOTH)
 		
 	# Method to draw the marks for the interval
 	def drawmarks(self, interval):
+		sign = lambda x: (1,-1)[ x < 0]
 		r = interval[0]
 		s = interval[1] - interval[0]
 		mark = self.width/s
+		
+		# The app just supports equal intervals
+		if sign(r) == sign(s) and abs(r) != abs(s) : return False
+		
+		
 		for i in np.arange(0, self.width, mark):
 			self.can.create_line(i, self.height//2+10, i, self.height//2-10)
 			if r != interval[0]:
@@ -81,17 +80,18 @@ class graph(tk.Tk):
 			r += 1
 		
 		r = interval[0]
+		
 		for i in np.arange(0, self.height, mark):
 			self.can.create_line(self.width//2+10, i, self.width//2-10, i)
 			if r != interval[0] and r != 0:
 				self.can.create_text(self.width//2+15,i+5,fill="darkblue",font="Times 8 italic bold",text=-r, width=0)
 			r += 1
-
+		return True
 	# Method to draw the graph implement an arg parser at a later time *work
 	def drawgraph(self, expression, interval):
 		freq = 0.01
 		s = interval[1] - interval[0]
-		if s <= 20: freq = 0.0001
+		if s <= 10: freq = 0.0001
 		if s <= 2: freq = 0.00001
 		mark = self.width//s
 		if mark < 15:
@@ -103,20 +103,19 @@ class graph(tk.Tk):
 		self.can.create_line(self.width/2, 0, self.width/2, self.height)
 		
 		y = 0
-		self.drawmarks(interval)
-		ypoints = self.argparse(expression, interval, freq)
+		if self.drawmarks(interval):
+			ypoints = self.argparse(expression, interval, freq)
 			
-		for x in np.arange(interval[0], interval[1], freq):
-			if self.width < (self.height/2)+-ypoints[y]*mark-2 > self.height: 
+			for x in np.arange(interval[0], interval[1], freq):
+				if self.height (self.height/2)+-ypoints[y]*mark-2 > self.height or : 
+					y += 1
+					continue
+				self.can.create_oval((self.width/2)+x*mark-2, (self.height/2)+-ypoints[y]*mark-2, (self.width/2)+x*mark+2, (self.height/2)+-ypoints[y]*mark+2, fill='black')
 				y += 1
-				continue
-			self.can.create_oval((self.width/2)+x*mark-2, (self.height/2)+-ypoints[y]*mark-2, (self.width/2)+x*mark+2, (self.height/2)+-ypoints[y]*mark+2, fill='black')
-			y += 1
 
 	# Adjusts canvas size
 	def adjustcanvas(self,interval):
-		
-		
+
 		self.width *= 1.5
 		self.height *= 1.5
 		self.config(width=self.width,height=self.height)
@@ -124,10 +123,7 @@ class graph(tk.Tk):
 		if s < 15:
 			self.adjustcanvas(s)
 
-	# The arg parser for the string expression 
-	# Need to work on it so that x**(linexp) works
-	# Modify regex
-	#
+	# The arg parser for the string expression
 	def argparse(self, expression, interval, freq):
 		ypts = [] 
 		if re.search(r'\bx\*\*[a-z]*[\d\(\)\+\-\*\/\.]*[0-9]*x[\d\(\)\+\-\*\/\.]*[0-9]*',expression) or re.search(r'\(*x[\*\-\+0-9]*\)*\*\*[0-9]+.5',expression):
@@ -139,7 +135,6 @@ class graph(tk.Tk):
 					safe_dict['x'] = x
 					
 					y = eval(expression,{"__builtins__":None},safe_dict)
-					
 					ypts.append(y)
 				except TypeError:
 					continue
@@ -149,9 +144,26 @@ class graph(tk.Tk):
 			return ypts 
 		except:
 			pass # Put some error code in here incase of bad expression that python does not understand
+
+	# Zooming function	
+	def zoomer(self,event):
+		if (event.delta > 0):
+			self.can.scale("all", event.x, event.y, 1.01,1.01)
+		elif (event.delta < 0):
+			self.can.scale("all", event.x, event.y, 0.95, 0.95)
+		self.can.configure(scrollregion = self.can.bbox("all"))
+	
+	# Functions for moving canvas around with mouse
+	def move_start(self, event):
+		self.can.scan_mark(event.x, event.y)
+	def move_move(self, event):
+		self.can.scan_dragto(event.x, event.y, gain=1)
 	
 	# Allows user to upload an ORGINAL plot to the database
 	def upload(self, expression):
+		cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
+		cursor = cnx.cursor()
+
 		hostname = str(socket.gethostname())
 		try:
 			add_plot = f'INSERT INTO users_plots (hostname, plot) VALUES ("{hostname}", "{expression}");'
@@ -162,7 +174,9 @@ class graph(tk.Tk):
 
 	# Allows user to see plots other users have thought up
 	def download(self, cursor):
-		
+		cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
+		cursor = cnx.cursor()
+
 		hosts = []
 		plots = []
 		
@@ -192,7 +206,8 @@ class graph(tk.Tk):
 			t.insert(END, f"{plots[i]}\n")
 		t.config(state=DISABLED)
 		plotwindow.mainloop()
-		
+	
+
 # Gets interval from interval
 def intervalget():
 	interval = []
@@ -204,31 +219,6 @@ def intervalget():
 app = graph()
 app.title("Fun Plot")
 
-# Mouse click event
-xPos = 0
-yPos = 0
-def showPosEvent(event):
-    xPos = event.x / 25
-    if xPos < 10:
-                xPos = xPos - 10
-    elif xPos > 10:
-            xPos = xPos - 10
-    elif xPos == 10:
-            xPos = 0
-    yPos = event.y / 25
-    if yPos < 10:
-            yPos = 10 - yPos
-    elif yPos > 10:
-            yPos = 10 - yPos
-    elif yPos == 10:
-            yPos = 0
-    xPos = '%.2f'%(xPos)
-    yPos = '%.2f'%(yPos)
-    print('X=%s Y=%s' % (xPos, yPos))
-    app.can.create_text(event.x, event.y - 10, fill='black', font='Times', text=f'({xPos}, {yPos})')
-
-def onLeftClick(event):
-    print(showPosEvent(event))
 
 # Input window for expression
 
@@ -277,10 +267,8 @@ intervalright.pack(side = RIGHT)
 
 # key bindings	
 app.bind('<Return>',lambda event: app.drawgraph(expression=e.get()))
-app.bind('<Button-1>', onLeftClick)
+
 input_expression.bind('<Return>',lambda event: app.drawgraph(expression=e.get(), interval = intervalget()))
 
 # Main loop of program
 app.mainloop()
-
-

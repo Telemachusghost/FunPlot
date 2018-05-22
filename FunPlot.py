@@ -107,9 +107,11 @@ class graph(tk.Tk):
 			ypoints = self.argparse(expression, interval, freq)
 			
 			for x in np.arange(interval[0], interval[1], freq):
-				if self.height (self.height/2)+-ypoints[y]*mark-2 > self.height or : 
+				"""
+				if  (self.height/2)+-ypoints[y]*mark-2 > self.height: 
 					y += 1
 					continue
+				"""
 				self.can.create_oval((self.width/2)+x*mark-2, (self.height/2)+-ypoints[y]*mark-2, (self.width/2)+x*mark+2, (self.height/2)+-ypoints[y]*mark+2, fill='black')
 				y += 1
 

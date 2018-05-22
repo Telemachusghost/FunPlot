@@ -41,8 +41,12 @@ class graph(tk.Tk):
 	def __init__(self, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
 		
 		tk.Tk.__init__(self)
+		self.cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
+		self.cursor = self.cnx.cursor()
+
 		self.width = width
 		self.height = height
+		self.title('Fun Plot')
 
 		self.can = Canvas(self, width = width , height = height, bg = 'white')
 		
@@ -62,6 +66,62 @@ class graph(tk.Tk):
 		self.can.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set, scrollregion=(0,0,5000,5000))
 		self.can.pack(side=LEFT,expand=True,fill=BOTH)
 		
+		# Input window for expression
+
+		input_expression = Toplevel(bg = 'white', width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT/2)
+		input_expression.wm_title('f(x)')
+		expression = StringVar()
+
+		intervalexpleft = StringVar()
+		intervalexpright = StringVar()
+
+		intervalexpleft.set('-10')
+		intervalexpright.set('10')
+
+		# Sub frames for input_expression
+		expressionin = Frame(master=input_expression, bg = 'white')
+		expressionin.pack()
+		intervalin = Frame(master=input_expression, bg='white', width=25)
+		intervalin.pack()
+
+
+
+		# The expressions widgets, includes an upload to database button
+		w = Label(expressionin, text="f(x) =" ,bg='white')
+		w.pack(side=LEFT)
+			
+		e = Entry(expressionin, textvariable=expression)
+		e.pack(side=LEFT)
+
+		db = Button(expressionin, text='Download', command= lambda: self.download())
+		db.pack(side = RIGHT)
+			
+		pb = Button(expressionin, text='Upload', command= lambda: self.upload(e.get()))
+		pb.pack(side = RIGHT)
+			
+		b = Button(expressionin, text="Plot", command = lambda: self.drawgraph(expression=e.get(), interval=intervalget()))
+		b.pack(side = RIGHT)
+
+
+		# Interval widgets
+		intervalleft = Entry(intervalin, textvariable = intervalexpleft, width=25)
+		intervalleft.pack(side=LEFT)
+
+		intervalright = Entry(intervalin, textvariable = intervalexpright, width=25)
+		intervalright.pack(side = RIGHT)
+
+
+		# key bindings	
+
+		input_expression.bind('<Return>',lambda event: self.drawgraph(expression=e.get(), interval = self.intervalget(intervalexpleft,intervalexpright)))
+
+	# Gets interval from interval
+	def intervalget(self,il,ir):
+		interval = []
+		interval.append(int(il.get()))
+		interval.append(int(ir.get()))
+		return interval
+
 	# Method to draw the marks for the interval
 	def drawmarks(self, interval):
 		sign = lambda x: (1,-1)[ x < 0]
@@ -87,12 +147,16 @@ class graph(tk.Tk):
 				self.can.create_text(self.width//2+15,i+5,fill="darkblue",font="Times 8 italic bold",text=-r, width=0)
 			r += 1
 		return True
+	
 	# Method to draw the graph implement an arg parser at a later time *work
 	def drawgraph(self, expression, interval):
 		freq = 0.01
 		s = interval[1] - interval[0]
+		
+		"""
 		if s <= 10: freq = 0.0001
 		if s <= 2: freq = 0.00001
+		"""
 		mark = self.width//s
 		if mark < 15:
 			self.adjustcanvas(s)
@@ -107,13 +171,14 @@ class graph(tk.Tk):
 			ypoints = self.argparse(expression, interval, freq)
 			
 			for x in np.arange(interval[0], interval[1], freq):
-				"""
-				if  (self.height/2)+-ypoints[y]*mark-2 > self.height: 
+				
+				if (self.height/2)+-ypoints[y]*mark-2 > self.height or interval[0] < ypoints[y] > interval[1]: 
 					y += 1
 					continue
-				"""
+				
 				self.can.create_oval((self.width/2)+x*mark-2, (self.height/2)+-ypoints[y]*mark-2, (self.width/2)+x*mark+2, (self.height/2)+-ypoints[y]*mark+2, fill='black')
 				y += 1
+		self.can.update_idletasks()
 
 	# Adjusts canvas size
 	def adjustcanvas(self,interval):
@@ -163,33 +228,30 @@ class graph(tk.Tk):
 	
 	# Allows user to upload an ORGINAL plot to the database
 	def upload(self, expression):
-		cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
-		cursor = cnx.cursor()
 
 		hostname = str(socket.gethostname())
 		try:
 			add_plot = f'INSERT INTO users_plots (hostname, plot) VALUES ("{hostname}", "{expression}");'
-			cursor.execute(add_plot)
-			cnx.commit()
+			self.cursor.execute(add_plot)
+			self.cnx.commit()
 		except:
 			pass
 
 	# Allows user to see plots other users have thought up
 	def download(self):
-		cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
-		cursor = cnx.cursor()
+		
 
 		hosts = []
 		plots = []
 		
 		get_users = 'SELECT hostname FROM users_plots'
-		cursor.execute(get_users)
-		for i in cursor:
+		self.cursor.execute(get_users)
+		for i in self.cursor:
 			hosts.append(str(i)[2:-3])
 
 		get_plots = 'SELECT plot FROM users_plots'
-		cursor.execute(get_plots)
-		for i in cursor:
+		self.cursor.execute(get_plots)
+		for i in self.cursor:
 			plots.append(str(i)[2:-3])
 
 		plotwindow = tk.Tk()
@@ -210,67 +272,12 @@ class graph(tk.Tk):
 		plotwindow.mainloop()
 	
 
-# Gets interval from interval
-def intervalget():
-	interval = []
-	interval.append(int(intervalleft.get()))
-	interval.append(int(intervalright.get()))
-	return interval
+
 
 # Root window for graphing program
 app = graph()
-app.title("Fun Plot")
 
-
-# Input window for expression
-
-input_expression = Toplevel(bg = 'white', width = DEFAULT_WIDTH, height = DEFAULT_HEIGHT/2)
-input_expression.wm_title('f(x)')
-expression = StringVar()
-
-intervalexpleft = StringVar()
-intervalexpright = StringVar()
-
-intervalexpleft.set('-10')
-intervalexpright.set('10')
-
-# Sub frames for input_expression
-expressionin = Frame(master=input_expression, bg = 'white')
-expressionin.pack()
-intervalin = Frame(master=input_expression, bg='white', width=25)
-intervalin.pack()
-
-
-
-# The expressions widgets, includes an upload to database button
-w = Label(expressionin, text="f(x) =" ,bg='white')
-w.pack(side=LEFT)
-	
-e = Entry(expressionin, textvariable=expression)
-e.pack(side=LEFT)
-
-db = Button(expressionin, text='Download', command= lambda: app.download())
-db.pack(side = RIGHT)
-	
-pb = Button(expressionin, text='Upload', command= lambda: app.upload(e.get()))
-pb.pack(side = RIGHT)
-	
-b = Button(expressionin, text="Plot", command = lambda: app.drawgraph(expression=e.get(), interval=intervalget()))
-b.pack(side = RIGHT)
-
-
-# Interval widgets
-intervalleft = Entry(intervalin, textvariable = intervalexpleft, width=25)
-intervalleft.pack(side=LEFT)
-
-intervalright = Entry(intervalin, textvariable = intervalexpright, width=25)
-intervalright.pack(side = RIGHT)
-
-
-# key bindings	
-app.bind('<Return>',lambda event: app.drawgraph(expression=e.get()))
-
-input_expression.bind('<Return>',lambda event: app.drawgraph(expression=e.get(), interval = intervalget()))
 
 # Main loop of program
-app.mainloop()
+if __name__=='__main__':
+	app.mainloop()

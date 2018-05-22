@@ -175,7 +175,7 @@ class graph(tk.Tk):
 			pass
 
 	# Allows user to see plots other users have thought up
-	def download(self, cursor):
+	def download(self):
 		cnx = connect(user='testprojects', password='Testing123!',host='den1.mysql4.gear.host',database='testprojects')
 		cursor = cnx.cursor()
 
@@ -249,7 +249,7 @@ w.pack(side=LEFT)
 e = Entry(expressionin, textvariable=expression)
 e.pack(side=LEFT)
 
-db = Button(expressionin, text='Download', command= lambda: app.download(cursor))
+db = Button(expressionin, text='Download', command= lambda: app.download())
 db.pack(side = RIGHT)
 	
 pb = Button(expressionin, text='Upload', command= lambda: app.upload(e.get()))

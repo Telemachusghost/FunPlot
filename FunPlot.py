@@ -99,7 +99,7 @@ class graph(tk.Tk):
 		pb = Button(expressionin, text='Upload', command= lambda: self.upload(e.get()))
 		pb.pack(side = RIGHT)
 			
-		b = Button(expressionin, text="Plot", command = lambda: self.drawgraph(expression=e.get(), interval=intervalget()))
+		b = Button(expressionin, text="Plot", command = lambda: self.drawgraph(expression=e.get(), interval=[int(intervalexpleft.get()),int(intervalexpright.get())]))
 		b.pack(side = RIGHT)
 
 
@@ -113,7 +113,7 @@ class graph(tk.Tk):
 
 		# key bindings	
 
-		input_expression.bind('<Return>',lambda event: self.drawgraph(expression=e.get(), interval = self.intervalget(intervalexpleft,intervalexpright)))
+		input_expression.bind('<Return>',lambda event: self.drawgraph(expression=e.get(), interval = [int(intervalexpleft.get()),int(intervalexpright.get())]))
 
 	# Gets interval from interval
 	def intervalget(self,il,ir):
@@ -228,6 +228,7 @@ class graph(tk.Tk):
 	
 	# Allows user to upload an ORGINAL plot to the database
 	def upload(self, expression):
+		
 
 		hostname = str(socket.gethostname())
 		try:
@@ -239,7 +240,6 @@ class graph(tk.Tk):
 
 	# Allows user to see plots other users have thought up
 	def download(self):
-		
 
 		hosts = []
 		plots = []
@@ -270,7 +270,6 @@ class graph(tk.Tk):
 			t.insert(END, f"{plots[i]}\n")
 		t.config(state=DISABLED)
 		plotwindow.mainloop()
-	
 
 
 
